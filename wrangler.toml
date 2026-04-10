@@ -8,12 +8,12 @@ not_found_handling = "single-page-application"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "omniscore-db"
-database_id = "YOUR_D1_DATABASE_ID" # Replace with your actual D1 database ID
+database_name = "omniscore"
+database_id = "049e36c3-fae7-442b-ac1c-6cd0c34a09f4" # Replace with your actual D1 database ID
 
 [[r2_buckets]]
 binding = "BUCKET"
-bucket_name = "omniscore-scores"
+bucket_name = "omniscore-bucket"
 
 [vars]
 # You need to set these in Cloudflare Pages settings or .dev.vars for local dev
