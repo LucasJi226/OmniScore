@@ -1,0 +1,19 @@
+name = "omniscore"
+compatibility_date = "2024-04-01"
+pages_build_output_dir = "dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "omniscore-db"
+database_id = "YOUR_D1_DATABASE_ID" # Replace with your actual D1 database ID
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "omniscore-scores"
+
+[vars]
+# You need to set these in Cloudflare Pages settings or .dev.vars for local dev
+# GOOGLE_CLIENT_ID = "..."
+# GOOGLE_CLIENT_SECRET = "..."
+# JWT_SECRET = "..."
+# APP_URL = "http://localhost:3000"

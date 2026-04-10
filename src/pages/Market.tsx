@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { Download, Search, Music, User as UserIcon, Clock } from 'lucide-react';
-import { db } from '../lib/firebase';
 import { format } from 'date-fns';
 
 interface Score {
@@ -10,9 +8,9 @@ interface Score {
   composer: string;
   instrument: string;
   description: string;
-  uploaderName: string;
+  uploader_name: string;
   downloads: number;
-  createdAt: string;
+  created_at: string;
 }
 
 export default function Market() {
@@ -28,20 +26,11 @@ export default function Market() {
   const fetchScores = async () => {
     setLoading(true);
     try {
-      // In a real app, we'd add pagination and more complex querying
-      const q = query(
-        collection(db, 'scores'),
-        where('isPublic', '==', true),
-        orderBy('createdAt', 'desc')
-      );
-      
-      const querySnapshot = await getDocs(q);
-      const fetchedScores: Score[] = [];
-      querySnapshot.forEach((doc) => {
-        fetchedScores.push({ id: doc.id, ...doc.data() } as Score);
-      });
-      
-      setScores(fetchedScores);
+      const res = await fetch('/api/scores');
+      if (res.ok) {
+        const data = await res.json();
+        setScores(data);
+      }
     } catch (error) {
       console.error("Error fetching scores:", error);
     } finally {
@@ -116,7 +105,23 @@ export default function Market() {
   );
 }
 
-function ScoreCard({ score }: { score: Score }) {
+const ScoreCard: React.FC<{ score: Score }> = ({ score }) => {
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      window.open(`/api/scores/${score.id}/download`, '_blank');
+      // Note: We don't increment local state immediately since it opens in a new tab,
+      // but the backend will increment it.
+    } catch (error) {
+      console.error("Error downloading score:", error);
+      alert("下载失败，请稍后重试");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col">
       <div className="p-6 flex-grow">
@@ -137,11 +142,11 @@ function ScoreCard({ score }: { score: Score }) {
         <div className="flex items-center text-xs text-gray-500 gap-4">
           <div className="flex items-center gap-1">
             <UserIcon className="h-3 w-3" />
-            <span className="truncate max-w-[100px]">{score.uploaderName}</span>
+            <span className="truncate max-w-[100px]">{score.uploader_name}</span>
           </div>
           <div className="flex items-center gap-1">
             <Clock className="h-3 w-3" />
-            <span>{format(new Date(score.createdAt), 'yyyy-MM-dd')}</span>
+            <span>{format(new Date(score.created_at), 'yyyy-MM-dd')}</span>
           </div>
         </div>
       </div>
@@ -151,8 +156,12 @@ function ScoreCard({ score }: { score: Score }) {
           <Download className="h-4 w-4 mr-1" />
           {score.downloads} 次下载
         </div>
-        <button className="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors">
-          下载 MusicXML
+        <button 
+          onClick={handleDownload}
+          disabled={downloading}
+          className="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {downloading ? '下载中...' : '下载 MusicXML'}
         </button>
       </div>
     </div>

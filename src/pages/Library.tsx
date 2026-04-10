@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, where, getDocs, doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { Upload, FileMusic, Trash2, Globe, Lock, Plus, X } from 'lucide-react';
-import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { format } from 'date-fns';
 
@@ -11,8 +9,9 @@ interface Score {
   composer: string;
   instrument: string;
   description: string;
-  isPublic: boolean;
-  createdAt: string;
+  is_public: boolean;
+  created_at: string;
+  uploader_name: string;
 }
 
 export default function Library() {
@@ -43,21 +42,11 @@ export default function Library() {
     if (!user) return;
     setLoading(true);
     try {
-      const q = query(
-        collection(db, 'scores'),
-        where('uploaderId', '==', user.uid)
-      );
-      
-      const querySnapshot = await getDocs(q);
-      const fetchedScores: Score[] = [];
-      querySnapshot.forEach((doc) => {
-        fetchedScores.push({ id: doc.id, ...doc.data() } as Score);
-      });
-      
-      // Sort locally since we didn't add a composite index for uploaderId + createdAt
-      fetchedScores.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      
-      setScores(fetchedScores);
+      const res = await fetch('/api/scores/me');
+      if (res.ok) {
+        const data = await res.json();
+        setScores(data);
+      }
     } catch (error) {
       console.error("Error fetching my scores:", error);
     } finally {
@@ -70,7 +59,6 @@ export default function Library() {
       const selectedFile = e.target.files[0];
       setFile(selectedFile);
       if (!title) {
-        // Use filename without extension as default title
         setTitle(selectedFile.name.replace(/\.[^/.]+$/, ""));
       }
     }
@@ -82,32 +70,20 @@ export default function Library() {
 
     setUploading(true);
     try {
-      // Read file content
-      const fileContent = await file.text();
-      
-      // Generate a new ID
-      const newScoreRef = doc(collection(db, 'scores'));
-      const scoreId = newScoreRef.id;
-      
-      const now = new Date().toISOString();
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('title', title);
+      formData.append('composer', composer);
+      formData.append('instrument', instrument);
+      formData.append('description', description);
+      formData.append('isPublic', isPublic.toString());
 
-      // Save metadata
-      await setDoc(newScoreRef, {
-        title,
-        composer,
-        instrument,
-        description,
-        uploaderId: user.uid,
-        uploaderName: user.displayName || 'Anonymous',
-        isPublic,
-        downloads: 0,
-        createdAt: now
+      const res = await fetch('/api/scores', {
+        method: 'POST',
+        body: formData
       });
 
-      // Save file content
-      await setDoc(doc(db, 'scoreFiles', scoreId), {
-        content: fileContent
-      });
+      if (!res.ok) throw new Error('Upload failed');
 
       // Reset form and close modal
       setFile(null);
@@ -132,8 +108,8 @@ export default function Library() {
     if (!window.confirm("确定要删除这个乐谱吗？此操作不可恢复。")) return;
     
     try {
-      await deleteDoc(doc(db, 'scores', scoreId));
-      await deleteDoc(doc(db, 'scoreFiles', scoreId));
+      const res = await fetch(`/api/scores/${scoreId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Delete failed');
       setScores(scores.filter(s => s.id !== scoreId));
     } catch (error) {
       console.error("Error deleting score:", error);
@@ -188,7 +164,7 @@ export default function Library() {
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="text-lg font-bold text-gray-900 truncate">{score.title}</h3>
-                          {score.isPublic ? (
+                          {score.is_public ? (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
                               <Globe className="h-3 w-3 mr-1" /> 公开
                             </span>
@@ -201,7 +177,7 @@ export default function Library() {
                         <div className="flex flex-wrap items-center text-sm text-gray-500 gap-x-4 gap-y-1">
                           <span>{score.instrument}</span>
                           {score.composer && <span>• {score.composer}</span>}
-                          <span>• {format(new Date(score.createdAt), 'yyyy-MM-dd')}</span>
+                          <span>• {format(new Date(score.created_at), 'yyyy-MM-dd')}</span>
                         </div>
                       </div>
                     </div>

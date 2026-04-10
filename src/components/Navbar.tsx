@@ -2,13 +2,16 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Music, Menu, X, User as UserIcon, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { loginWithGoogle, logout } from '../lib/firebase';
 import { cn } from '../lib/utils';
 
 export default function Navbar() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+
+  const loginWithGoogle = () => {
+    window.location.href = '/api/auth/google';
+  };
 
   const navLinks = [
     { name: '首页', path: '/' },
@@ -50,14 +53,14 @@ export default function Navbar() {
             {user ? (
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2 text-sm text-gray-700">
-                  {user.photoURL ? (
-                    <img src={user.photoURL} alt="Avatar" className="h-8 w-8 rounded-full" referrerPolicy="no-referrer" />
+                  {user.picture ? (
+                    <img src={user.picture} alt="Avatar" className="h-8 w-8 rounded-full" referrerPolicy="no-referrer" />
                   ) : (
                     <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
                       <UserIcon className="h-4 w-4 text-gray-500" />
                     </div>
                   )}
-                  <span className="font-medium">{user.displayName}</span>
+                  <span className="font-medium">{user.name}</span>
                 </div>
                 <button
                   onClick={logout}
@@ -112,15 +115,15 @@ export default function Navbar() {
             {user ? (
               <div className="flex items-center px-4 justify-between">
                 <div className="flex items-center gap-3">
-                  {user.photoURL ? (
-                    <img src={user.photoURL} alt="Avatar" className="h-10 w-10 rounded-full" referrerPolicy="no-referrer" />
+                  {user.picture ? (
+                    <img src={user.picture} alt="Avatar" className="h-10 w-10 rounded-full" referrerPolicy="no-referrer" />
                   ) : (
                     <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
                       <UserIcon className="h-5 w-5 text-gray-500" />
                     </div>
                   )}
                   <div>
-                    <div className="text-base font-medium text-gray-800">{user.displayName}</div>
+                    <div className="text-base font-medium text-gray-800">{user.name}</div>
                     <div className="text-sm font-medium text-gray-500">{user.email}</div>
                   </div>
                 </div>

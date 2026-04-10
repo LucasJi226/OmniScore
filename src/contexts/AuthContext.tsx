@@ -1,14 +1,23 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../lib/firebase';
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  picture: string;
+}
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  logout: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
+const AuthContext = createContext<AuthContextType>({ 
+  user: null, 
+  loading: true, 
+  logout: async () => {} 
+});
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -17,35 +26,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      
-      if (currentUser) {
-        // Ensure user document exists
-        const userRef = doc(db, 'users', currentUser.uid);
-        const userSnap = await getDoc(userRef);
-        
-        if (!userSnap.exists()) {
-          try {
-            await setDoc(userRef, {
-              displayName: currentUser.displayName || 'Anonymous User',
-              email: currentUser.email || '',
-              createdAt: new Date().toISOString()
-            });
-          } catch (error) {
-            console.error("Error creating user document:", error);
-          }
+    fetch('/api/auth/me')
+      .then(res => res.ok ? res.json() : null)
+      .then((data: any) => {
+        if (data && data.user) {
+          setUser(data.user);
         }
-      }
-      
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      setUser(null);
+    } catch (error) {
+      console.error("Error logging out", error);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, logout }}>
       {!loading && children}
     </AuthContext.Provider>
   );
