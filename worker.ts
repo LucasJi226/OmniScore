@@ -1,5 +1,4 @@
 import { Hono } from 'hono'
-import { handle } from 'hono/cloudflare-pages'
 import { sign, verify } from 'hono/jwt'
 import { setCookie, getCookie, deleteCookie } from 'hono/cookie'
 
@@ -211,4 +210,4 @@ app.delete('/scores/:id', authMiddleware, async (c) => {
   }
 })
 
-export const onRequest = handle(app)
+export default app
