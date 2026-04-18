@@ -5,10 +5,7 @@ import { setCookie, getCookie, deleteCookie } from 'hono/cookie'
 type Bindings = {
   DB: D1Database
   BUCKET: R2Bucket
-  GOOGLE_CLIENT_ID: string
-  GOOGLE_CLIENT_SECRET: string
   JWT_SECRET: string
-  APP_URL: string
 }
 
 type Variables = {
@@ -35,61 +32,39 @@ const authMiddleware = async (c: any, next: any) => {
   }
 }
 
+// --- Helper: Hash Password ---
+async function hashPassword(password: string, salt: string) {
+  const msgUint8 = new TextEncoder().encode(password + salt)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
 // --- Auth Routes ---
-app.get('/auth/google', (c) => {
-  const clientId = c.env.GOOGLE_CLIENT_ID
-  const redirectUri = `${c.env.APP_URL}/api/auth/callback`
-  const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email profile`
-  return c.redirect(url)
-})
-
-app.get('/auth/callback', async (c) => {
-  const code = c.req.query('code')
-  const clientId = c.env.GOOGLE_CLIENT_ID
-  const clientSecret = c.env.GOOGLE_CLIENT_SECRET
-  const redirectUri = `${c.env.APP_URL}/api/auth/callback`
-
-  if (!code) return c.redirect('/?error=missing_code')
-
+app.post('/auth/register', async (c) => {
   try {
-    // Exchange code for token
-    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: redirectUri,
-        grant_type: 'authorization_code'
-      })
-    })
-    const tokenData = await tokenRes.json() as any
+    const { email, password, name } = await c.req.json()
+    if (!email || !password || !name) return c.json({ error: 'Missing fields' }, 400)
 
-    if (!tokenData.access_token) {
-      throw new Error('Failed to get access token')
-    }
+    const existingUser = await c.env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first()
+    if (existingUser) return c.json({ error: 'Email already exists' }, 400)
 
-    // Get user info
-    const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-      headers: { Authorization: `Bearer ${tokenData.access_token}` }
-    })
-    const userData = await userRes.json() as any
+    const id = crypto.randomUUID()
+    const salt = crypto.randomUUID()
+    const password_hash = await hashPassword(password, salt)
+    const picture = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(email)}`
 
-    // Upsert user in D1
     await c.env.DB.prepare(
-      `INSERT INTO users (id, email, display_name, avatar_url)
-       VALUES (?, ?, ?, ?)
-       ON CONFLICT(id) DO UPDATE SET display_name=excluded.display_name, avatar_url=excluded.avatar_url`
-    ).bind(userData.id, userData.email, userData.name, userData.picture).run()
+      `INSERT INTO users (id, email, display_name, avatar_url, password_hash, salt)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    ).bind(id, email, name, picture, password_hash, salt).run()
 
-    // Create JWT
     const jwt = await sign({ 
-      id: userData.id, 
-      email: userData.email, 
-      name: userData.name, 
-      picture: userData.picture, 
-      exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7 // 7 days
+      id, 
+      email, 
+      name, 
+      picture, 
+      exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7 
     }, c.env.JWT_SECRET, 'HS256')
 
     setCookie(c, 'auth_token', jwt, { 
@@ -99,10 +74,43 @@ app.get('/auth/callback', async (c) => {
       maxAge: 60 * 60 * 24 * 7 
     })
 
-    return c.redirect('/')
+    return c.json({ success: true, user: { id, email, name, picture } })
   } catch (error) {
-    console.error('Auth error:', error)
-    return c.redirect('/?error=auth_failed')
+    console.error('Register error:', error)
+    return c.json({ error: 'Registration failed' }, 500)
+  }
+})
+
+app.post('/auth/login', async (c) => {
+  try {
+    const { email, password } = await c.req.json()
+    if (!email || !password) return c.json({ error: 'Missing fields' }, 400)
+
+    const user = await c.env.DB.prepare('SELECT * FROM users WHERE email = ?').bind(email).first()
+    if (!user || !user.salt) return c.json({ error: 'Invalid credentials' }, 401)
+
+    const hash = await hashPassword(password, user.salt as string)
+    if (hash !== user.password_hash) return c.json({ error: 'Invalid credentials' }, 401)
+
+    const jwt = await sign({ 
+      id: user.id, 
+      email: user.email, 
+      name: user.display_name, 
+      picture: user.avatar_url, 
+      exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7 
+    }, c.env.JWT_SECRET, 'HS256')
+
+    setCookie(c, 'auth_token', jwt, { 
+      httpOnly: true, 
+      secure: true, 
+      path: '/', 
+      maxAge: 60 * 60 * 24 * 7 
+    })
+
+    return c.json({ success: true, user: { id: user.id, email: user.email, name: user.display_name, picture: user.avatar_url } })
+  } catch (error) {
+    console.error('Login error:', error)
+    return c.json({ error: 'Login failed' }, 500)
   }
 })
 

@@ -10,6 +10,7 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Market from './pages/Market';
 import Library from './pages/Library';
+import AuthModal from './components/AuthModal';
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
       <Router>
         <div className="flex flex-col min-h-screen font-sans text-gray-900 bg-gray-50">
           <Navbar />
+          <AuthModal />
           <main className="flex-grow">
             <Routes>
               <Route path="/" element={<Home />} />

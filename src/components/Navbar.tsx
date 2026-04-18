@@ -5,12 +5,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { cn } from '../lib/utils';
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
+  const { user, logout, openAuthModal } = useAuth();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
-  const loginWithGoogle = () => {
-    window.location.href = '/api/auth/google';
+  const handleLoginClick = () => {
+    openAuthModal();
   };
 
   const navLinks = [
@@ -72,7 +72,7 @@ export default function Navbar() {
               </div>
             ) : (
               <button
-                onClick={loginWithGoogle}
+                onClick={handleLoginClick}
                 className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition-colors"
               >
                 登录 / 注册
@@ -141,7 +141,7 @@ export default function Navbar() {
               <div className="px-4">
                 <button
                   onClick={() => {
-                    loginWithGoogle();
+                    handleLoginClick();
                     setIsMobileMenuOpen(false);
                   }}
                   className="w-full flex justify-center items-center px-4 py-2 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
