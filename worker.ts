@@ -77,9 +77,9 @@ app.post('/auth/register', async (c) => {
     })
 
     return c.json({ success: true, user: { id, email, name, picture } })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Register error:', error)
-    return c.json({ error: 'Registration failed' }, 500)
+    return c.json({ error: 'Registration failed: ' + (error.message || String(error)) }, 500)
   }
 })
 
@@ -110,9 +110,9 @@ app.post('/auth/login', async (c) => {
     })
 
     return c.json({ success: true, user: { id: user.id, email: user.email, name: user.display_name, picture: user.avatar_url } })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Login error:', error)
-    return c.json({ error: 'Login failed' }, 500)
+    return c.json({ error: 'Login failed: ' + (error.message || String(error)) }, 500)
   }
 })
 
