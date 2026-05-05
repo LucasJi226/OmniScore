@@ -19,4 +19,5 @@ bucket_name = "omniscore-bucket"
 # You need to set these in Cloudflare Pages settings or .dev.vars for local dev
 # JWT_SECRET = "..."
 # APP_URL = "http://localhost:3000"
-# SILICONFLOW_API_KEY = "..."
+# AI_API_KEY = "..."
+# AI_API_URL = "..."

@@ -84,12 +84,23 @@ npx wrangler d1 execute omniscore --remote --file=./schema.sql
 npx wrangler r2 bucket create omniscore-bucket
 ```
 
-### 5. 配置线上 JWT 密钥 (Secret)
-线上验证 Token 需要一个密钥，直接将其注入到 Cloudflare 的加密环境变量空间中（不要写在代码里）：
+### 5. 配置线上密钥 (Secret)
+线上验证 Token 以及若有使用全局 AI 需要配置密钥，直接将其注入到 Cloudflare 的加密环境变量空间中（不要写在代码里）：
+
+配置 JWT 的 Secret：
 ```bash
 npx wrangler secret put JWT_SECRET
 ```
 终端提示输入时，请贴入您生成的一个安全、复杂的长字符串。
+
+如果希望服务端配置全局通用的 AI 模型 API，可设置以下机密和明文变量（此时用户无需在前端重复填写）：
+```bash
+npx wrangler secret put AI_API_KEY
+```
+以及修改 `wrangler.toml` 中的 `[vars]`：
+```toml
+AI_API_URL = "https://api.openai.com/v1/chat/completions"
+```
 
 ### 6. 一键部署
 一切准备就绪，即可编译全栈静态文件并发布 Workers 接口：

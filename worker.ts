@@ -6,7 +6,8 @@ type Bindings = {
   DB: D1Database
   BUCKET: R2Bucket
   JWT_SECRET: string
-  SILICONFLOW_API_KEY: string
+  AI_API_KEY?: string
+  AI_API_URL?: string
 }
 
 type Variables = {
@@ -222,12 +223,16 @@ app.delete('/scores/:id', authMiddleware, async (c) => {
 // --- AI Compose Route ---
 app.post('/ai/compose', async (c) => {
   try {
-    const { prompt, model = 'Qwen/Qwen2.5-72B-Instruct' } = await c.req.json()
+    const body = await c.req.json()
+    const prompt = body.prompt
+    const model = body.model || 'Qwen/Qwen2.5-72B-Instruct'
+    const apiUrl = body.apiUrl || c.env.AI_API_URL || 'https://api.siliconflow.cn/v1/chat/completions'
+    const apiKey = body.apiKey || c.env.AI_API_KEY
+
     if (!prompt) return c.json({ error: 'Prompt is required' }, 400)
 
-    const apiKey = c.env.SILICONFLOW_API_KEY
     if (!apiKey) {
-       return c.json({ error: 'SiliconFlow API key is not configured.' }, 500)
+       return c.json({ error: 'API key is not configured. Please provide it in the UI or configure AI_API_KEY in the backend.' }, 500)
     }
 
     const systemMessage = `You are an expert music composer and ABC notation expert. 
@@ -239,7 +244,7 @@ CRITICAL INSTRUCTIONS:
 - Ensure all mandatory ABC headers are present (X:1, T:Title, M:Meter, L:Note Length, K:Key).
 - Ensure the music logic (measures, notes) matches the user's prompt as closely as possible.`
 
-    const response = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -258,8 +263,8 @@ CRITICAL INSTRUCTIONS:
 
     if (!response.ok) {
        const errText = await response.text();
-       console.error("SiliconFlow API Error:", errText);
-       return c.json({ error: 'Failed to generate music from AI' }, 500)
+       console.error("AI API Error:", errText);
+       return c.json({ error: 'Failed to generate music from AI: ' + errText }, 500)
     }
 
     const data: any = await response.json();

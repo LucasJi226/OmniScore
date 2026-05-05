@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import abcjs from 'abcjs';
 import 'abcjs/abcjs-audio.css';
-import { Loader2, Music, Play, Square, Sparkles, RefreshCcw } from 'lucide-react';
+import { Loader2, Music, Play, Square, Sparkles, RefreshCcw, Settings, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function Composer() {
   const [prompt, setPrompt] = useState('生成一段适合初学者弹奏的 C 大调欢快旋律，长度 8 个小节');
-  const [model, setModel] = useState('Qwen/Qwen2.5-72B-Instruct');
+  const [model, setModel] = useState(localStorage.getItem('ai_model') || 'Qwen/Qwen2.5-72B-Instruct');
+  const [apiUrl, setApiUrl] = useState(localStorage.getItem('ai_api_url') || 'https://api.siliconflow.cn/v1/chat/completions');
+  const [apiKey, setApiKey] = useState(localStorage.getItem('ai_api_key') || '');
+  const [showSettings, setShowSettings] = useState(false);
+  
   const [abcText, setAbcText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -14,6 +18,14 @@ export default function Composer() {
   const paperRef = useRef<HTMLDivElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const synthRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ai_model', model);
+      localStorage.setItem('ai_api_url', apiUrl);
+      localStorage.setItem('ai_api_key', apiKey);
+    }
+  }, [model, apiUrl, apiKey]);
 
   useEffect(() => {
     if (abcText && paperRef.current) {
@@ -62,7 +74,7 @@ export default function Composer() {
       const res = await fetch('/api/ai/compose', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, model }),
+        body: JSON.stringify({ prompt, model, apiUrl, apiKey }),
       });
 
       const data = await res.json();
@@ -110,18 +122,54 @@ export default function Composer() {
         {/* Left Column: Input Form */}
         <div className="lg:col-span-1 border border-gray-200 bg-white shadow-sm rounded-2xl p-6">
           <form onSubmit={handleGenerate} className="space-y-6">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">模型 (Model)</label>
-              <select
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow"
+            <div className="border border-gray-200 rounded-xl overflow-hidden bg-gray-50/50">
+              <button
+                type="button"
+                onClick={() => setShowSettings(!showSettings)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
               >
-                <option value="Qwen/Qwen2.5-72B-Instruct">Qwen2.5-72B-Instruct</option>
-                <option value="deepseek-ai/DeepSeek-V3">DeepSeek-V3</option>
-                <option value="meta-llama/Llama-3-70b-chat-hf">Llama-3-70b</option>
-              </select>
-              <p className="text-xs text-gray-500 mt-1">均通过硅基流动 API 调用。</p>
+                <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <Settings className="w-4 h-4" />
+                  接口配置 (API Settings)
+                </div>
+                {showSettings ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+              </button>
+              
+              {showSettings && (
+                <div className="p-4 space-y-4 border-t border-gray-200 bg-white">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">API Base URL</label>
+                    <input
+                      type="text"
+                      value={apiUrl}
+                      onChange={(e) => setApiUrl(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                      placeholder="https://api.siliconflow.cn/v1/chat/completions"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">模型名称 (Model)</label>
+                    <input
+                      type="text"
+                      value={model}
+                      onChange={(e) => setModel(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                      placeholder="Qwen/Qwen2.5-72B-Instruct"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">API Key (保存在本地)</label>
+                    <input
+                      type="password"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                      placeholder="sk-..."
+                    />
+                    <p className="text-[10px] text-gray-500 mt-1">若服务器已配置，可留空。</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
