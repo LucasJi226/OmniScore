@@ -235,14 +235,18 @@ app.post('/ai/compose', async (c) => {
        return c.json({ error: 'API key is not configured. Please provide it in the UI or configure AI_API_KEY in the backend.' }, 500)
     }
 
-    const systemMessage = `You are an expert music composer and ABC notation expert. 
-Generate a complete, valid ABC notation score based on the user's request.
+    const systemMessage = `You are a master music composer, arranger, and world-class expert in ABC notation.
+Generate a complete, valid, and highly expressive ABC notation score based on the user's request.
+
 CRITICAL INSTRUCTIONS:
-- Return ONLY the raw ABC notation text.
-- Do NOT wrap in markdown code blocks like \`\`\`abc.
-- Do NOT include any explanations or conversational text.
-- Ensure all mandatory ABC headers are present (X:1, T:Title, M:Meter, L:Note Length, K:Key).
-- Ensure the music logic (measures, notes) matches the user's prompt as closely as possible.`
+1. Output Format: Return ONLY the raw ABC notation text. NO markdown code blocks like \`\`\`abc. NO explanations. NO conversational text.
+2. Headers: You MUST include all mandatory headers: X: (reference number), T: (Title), M: (Meter), L: (Default Note Length), K: (Key).
+3. TEMPO (CRITICAL!): You MUST include the 'Q:' header (e.g., Q: 1/4=130 or Q: 130). Set the exact BPM to match the requested style perfectly.
+4. DURATION (CRITICAL!): If the user asks for a time length (e.g., "1 minute"), mathematically calculate the number of measures needed based on your BPM and Time Signature, and write exactly that amount of music. Do not just write 4 measures and stop!
+5. STYLE & GROOVE: If the user asks for "Brazilian Funk", "Jazz", or complex genres, use heavy syncopation, 16th notes, triplets, ties (-), rests (z), and idiomatic rhythmic patterns. DO NOT generate basic beginner whole notes unless explicitly asked.
+6. EXPRESSION: Use chords (e.g., [CEG]), articulations (staccato '.', accents '!>!'), and dynamics (e.g., !mf!, !f!) to make the playback sound highly dynamic and professional.
+7. INSTRUMENT: You can use '%%MIDI program <number>' right after the headers to pick an appropriate General MIDI instrument (e.g., 0 for Piano, 24 for Guitar, 33 for Bass, 56 for Trumpet).
+8. Syntax: Ensure 100% valid ABC notation so the renderer does not fail.`
 
     const response = await fetch(apiUrl, {
       method: 'POST',
