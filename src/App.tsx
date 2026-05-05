@@ -10,6 +10,7 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Market from './pages/Market';
 import Library from './pages/Library';
+import Composer from './pages/Composer';
 import AuthModal from './components/AuthModal';
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
               <Route path="/" element={<Home />} />
               <Route path="/market" element={<Market />} />
               <Route path="/library" element={<Library />} />
+              <Route path="/composer" element={<Composer />} />
             </Routes>
           </main>
           <footer className="bg-white border-t border-gray-200 py-8">

@@ -17,7 +17,6 @@ bucket_name = "omniscore-bucket"
 
 [vars]
 # You need to set these in Cloudflare Pages settings or .dev.vars for local dev
-# GOOGLE_CLIENT_ID = "..."
-# GOOGLE_CLIENT_SECRET = "..."
 # JWT_SECRET = "..."
 # APP_URL = "http://localhost:3000"
+# SILICONFLOW_API_KEY = "..."

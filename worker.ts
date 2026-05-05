@@ -6,6 +6,7 @@ type Bindings = {
   DB: D1Database
   BUCKET: R2Bucket
   JWT_SECRET: string
+  SILICONFLOW_API_KEY: string
 }
 
 type Variables = {
@@ -215,6 +216,67 @@ app.delete('/scores/:id', authMiddleware, async (c) => {
   } catch (error) {
     console.error('Delete error:', error)
     return c.json({ error: 'Delete failed' }, 500)
+  }
+})
+
+// --- AI Compose Route ---
+app.post('/ai/compose', async (c) => {
+  try {
+    const { prompt, model = 'Qwen/Qwen2.5-72B-Instruct' } = await c.req.json()
+    if (!prompt) return c.json({ error: 'Prompt is required' }, 400)
+
+    const apiKey = c.env.SILICONFLOW_API_KEY
+    if (!apiKey) {
+       return c.json({ error: 'SiliconFlow API key is not configured.' }, 500)
+    }
+
+    const systemMessage = `You are an expert music composer and ABC notation expert. 
+Generate a complete, valid ABC notation score based on the user's request.
+CRITICAL INSTRUCTIONS:
+- Return ONLY the raw ABC notation text.
+- Do NOT wrap in markdown code blocks like \`\`\`abc.
+- Do NOT include any explanations or conversational text.
+- Ensure all mandatory ABC headers are present (X:1, T:Title, M:Meter, L:Note Length, K:Key).
+- Ensure the music logic (measures, notes) matches the user's prompt as closely as possible.`
+
+    const response = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: [
+          { role: 'system', content: systemMessage },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 1024,
+      })
+    });
+
+    if (!response.ok) {
+       const errText = await response.text();
+       console.error("SiliconFlow API Error:", errText);
+       return c.json({ error: 'Failed to generate music from AI' }, 500)
+    }
+
+    const data: any = await response.json();
+    let abcText = data.choices[0]?.message?.content?.trim() || '';
+    
+    // Fallback cleanup if model still returns markdown
+    if (abcText.startsWith('\`\`\`')) {
+        const lines = abcText.split('\\n');
+        if (lines[0].startsWith('\`\`\`')) lines.shift();
+        if (lines[lines.length - 1].startsWith('\`\`\`')) lines.pop(); // Remove trailing markdown
+        abcText = lines.join('\\n');
+    }
+
+    return c.json({ success: true, abc: abcText })
+  } catch (err: any) {
+    console.error('AI compose error:', err)
+    return c.json({ error: err.message || 'Internal Server Error' }, 500)
   }
 })
 

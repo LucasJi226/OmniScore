@@ -17,6 +17,7 @@ export default function Navbar() {
     { name: '首页', path: '/' },
     { name: '乐谱市场', path: '/market' },
     { name: '我的乐谱', path: '/library' },
+    { name: 'AI 创作', path: '/composer' },
   ];
 
   return (
