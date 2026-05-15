@@ -156,13 +156,21 @@ const ScoreCard: React.FC<{ score: Score }> = ({ score }) => {
           <Download className="h-4 w-4 mr-1" />
           {score.downloads} 次下载
         </div>
-        <button 
-          onClick={handleDownload}
-          disabled={downloading}
-          className="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {downloading ? '下载中...' : '下载 MusicXML'}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => window.open(`/play/${score.id}`, '_blank')}
+            className="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
+          >
+            查看并播放
+          </button>
+          <button 
+            onClick={handleDownload}
+            disabled={downloading}
+            className="text-sm border border-indigo-600 px-3 py-1 rounded-full font-medium text-indigo-600 hover:bg-indigo-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {downloading ? '下载中' : '下载'}
+          </button>
+        </div>
       </div>
     </div>
   );

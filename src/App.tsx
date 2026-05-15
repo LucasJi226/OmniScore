@@ -12,6 +12,7 @@ import Market from './pages/Market';
 import Library from './pages/Library';
 import Composer from './pages/Composer';
 import Devices from './pages/Devices';
+import ScorePlayer from './pages/ScorePlayer';
 import AuthModal from './components/AuthModal';
 
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
               <Route path="/library" element={<Library />} />
               <Route path="/composer" element={<Composer />} />
               <Route path="/devices" element={<Devices />} />
+              <Route path="/play/:id" element={<ScorePlayer />} />
             </Routes>
           </main>
           <footer className="bg-white border-t border-gray-200 py-8">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, FileMusic, Trash2, Globe, Lock, Plus, X } from 'lucide-react';
+import { Upload, FileMusic, Trash2, Globe, Lock, Plus, X, Play } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { format } from 'date-fns';
 
@@ -182,6 +182,13 @@ export default function Library() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 ml-4">
+                      <button
+                        onClick={() => window.open(`/play/${score.id}`, '_blank')}
+                        className="p-2 text-gray-400 hover:text-indigo-600 transition-colors rounded-full hover:bg-indigo-50"
+                        title="查看/播放"
+                      >
+                        <Play className="h-5 w-5" />
+                      </button>
                       <button 
                         onClick={() => handleDelete(score.id)}
                         className="p-2 text-gray-400 hover:text-red-600 transition-colors rounded-full hover:bg-red-50"
