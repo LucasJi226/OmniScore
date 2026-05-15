@@ -161,8 +161,12 @@ app.post('/scores', authMiddleware, async (c) => {
     return c.json({ error: 'Missing required fields' }, 400)
   }
 
+  const originalFilename = file.name || 'score.musicxml';
+  const ext = originalFilename.includes('.') ? originalFilename.split('.').pop()?.toLowerCase() : 'musicxml';
+  const finalExt = (ext === 'mxl' || ext === 'xml') ? ext : 'musicxml';
+  
   const id = crypto.randomUUID()
-  const fileKey = `scores/${id}.musicxml`
+  const fileKey = `scores/${id}.${finalExt}`
 
   try {
     // Upload to R2
@@ -197,8 +201,11 @@ app.get('/scores/:id/download', async (c) => {
   // Increment downloads
   await c.env.DB.prepare(`UPDATE scores SET downloads = downloads + 1 WHERE id = ?`).bind(id).run()
 
-  c.header('Content-Type', 'application/vnd.recordare.musicxml+xml')
-  c.header('Content-Disposition', `attachment; filename="${encodeURIComponent(score.title as string)}.musicxml"`)
+  const ext = (score.file_key as string).includes('.') ? (score.file_key as string).split('.').pop()?.toLowerCase() : 'musicxml';
+  const contentType = ext === 'mxl' ? 'application/vnd.recordare.musicxml' : 'application/vnd.recordare.musicxml+xml';
+
+  c.header('Content-Type', contentType)
+  c.header('Content-Disposition', `attachment; filename="${encodeURIComponent(score.title as string)}.${ext}"`)
   return c.body(object.body)
 })
 

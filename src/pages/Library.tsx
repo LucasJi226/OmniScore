@@ -199,7 +199,7 @@ export default function Library() {
           <div className="text-center py-20 bg-white rounded-xl border border-gray-200 border-dashed">
             <FileMusic className="mx-auto h-12 w-12 text-gray-300 mb-4" />
             <h3 className="text-lg font-medium text-gray-900">您的乐谱库是空的</h3>
-            <p className="mt-1 text-gray-500 mb-6">上传您的第一份 MusicXML 乐谱开始使用</p>
+            <p className="mt-1 text-gray-500 mb-6">上传您的第一份 MusicXML 或 MXL 乐谱开始使用</p>
             <button
               onClick={() => setIsUploadModalOpen(true)}
               className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 transition-colors"
@@ -242,14 +242,14 @@ export default function Library() {
                               ref={fileInputRef}
                               type="file" 
                               className="sr-only" 
-                              accept=".xml,.musicxml"
+                              accept=".xml,.musicxml,.mxl"
                               onChange={handleFileChange}
                               required
                             />
                           </label>
                         </div>
                         <p className="text-xs text-gray-500">
-                          {file ? file.name : "支持 .xml 或 .musicxml 格式"}
+                          {file ? file.name : "支持 .xml, .musicxml 或 .mxl 格式"}
                         </p>
                       </div>
                     </div>
