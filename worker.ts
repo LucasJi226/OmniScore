@@ -289,4 +289,101 @@ CRITICAL INSTRUCTIONS:
   }
 })
 
+// --- Device Management Routes ---
+
+// Device calls this to check its status or get a binding code
+app.get('/devices/status', async (c) => {
+  const uid = c.req.query('uid')
+  if (!uid) return c.json({ error: 'UID required' }, 400)
+
+  let device = await c.env.DB.prepare('SELECT * FROM devices WHERE id = ?').bind(uid).first() as any
+
+  if (!device) {
+    // Register new device
+    const code = Math.floor(100000 + Math.random() * 900000).toString()
+    const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 mins
+    await c.env.DB.prepare(
+      'INSERT INTO devices (id, binding_code, binding_code_expires) VALUES (?, ?, ?)'
+    ).bind(uid, code, expires).run()
+    return c.json({ bound: false, binding_code: code })
+  }
+
+  if (device.user_id) {
+    const user = await c.env.DB.prepare('SELECT display_name FROM users WHERE id = ?').bind(device.user_id).first() as any
+    return c.json({ bound: true, user_name: user?.display_name })
+  }
+
+  // Not bound, check if code expired
+  const now = new Date().toISOString()
+  if (!device.binding_code || device.binding_code_expires < now) {
+     const code = Math.floor(100000 + Math.random() * 900000).toString()
+     const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString()
+     await c.env.DB.prepare(
+       'UPDATE devices SET binding_code = ?, binding_code_expires = ?, last_seen = ? WHERE id = ?'
+     ).bind(code, expires, now, uid).run()
+     return c.json({ bound: false, binding_code: code })
+  }
+
+  // Update last seen
+  await c.env.DB.prepare('UPDATE devices SET last_seen = ? WHERE id = ?').bind(now, uid).run()
+
+  return c.json({ bound: false, binding_code: device.binding_code })
+})
+
+// Device calls this to get scores of the bound user
+app.get('/devices/scores', async (c) => {
+  const uid = c.req.query('uid')
+  if (!uid) return c.json({ error: 'UID required' }, 400)
+
+  const device = await c.env.DB.prepare('SELECT user_id FROM devices WHERE id = ?').bind(uid).first() as any
+  if (!device || !device.user_id) return c.json({ error: 'Device not bound' }, 403)
+
+  const { results } = await c.env.DB.prepare(
+    `SELECT id, title, composer, instrument, created_at FROM scores 
+     WHERE uploader_id = ? ORDER BY created_at DESC`
+  ).bind(device.user_id).all()
+
+  return c.json({ success: true, scores: results })
+})
+
+// Web user binds a device using a code
+app.post('/devices/bind', authMiddleware, async (c) => {
+  const user = c.get('user')
+  const { code, device_name } = await c.req.json()
+  const now = new Date().toISOString()
+
+  const device = await c.env.DB.prepare(
+    'SELECT * FROM devices WHERE binding_code = ? AND binding_code_expires > ?'
+  ).bind(code, now).first() as any
+
+  if (!device) return c.json({ error: 'Invalid or expired code' }, 400)
+
+  await c.env.DB.prepare(
+    'UPDATE devices SET user_id = ?, device_name = ?, binding_code = NULL, binding_code_expires = NULL WHERE id = ?'
+  ).bind(user.id, device_name || 'M5Stack Core2', device.id).run()
+
+  return c.json({ success: true })
+})
+
+// Web user gets their bound devices
+app.get('/devices/me', authMiddleware, async (c) => {
+  const user = c.get('user')
+  const { results } = await c.env.DB.prepare(
+    'SELECT id, device_name, last_seen, created_at FROM devices WHERE user_id = ?'
+  ).bind(user.id).all()
+  return c.json({ success: true, devices: results })
+})
+
+// Web user unbinds a device
+app.delete('/devices/:id', authMiddleware, async (c) => {
+  const user = c.get('user')
+  const id = c.req.param('id')
+  
+  await c.env.DB.prepare(
+    'UPDATE devices SET user_id = NULL, binding_code = NULL, binding_code_expires = NULL WHERE id = ? AND user_id = ?'
+  ).bind(id, user.id).run()
+  
+  return c.json({ success: true })
+})
+
 export default app

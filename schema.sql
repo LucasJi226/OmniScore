@@ -23,3 +23,14 @@ CREATE TABLE IF NOT EXISTS scores (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (uploader_id) REFERENCES users(id)
 );
+
+CREATE TABLE IF NOT EXISTS devices (
+  id TEXT PRIMARY KEY, -- Hardware UID
+  user_id TEXT, -- Bound user ID
+  device_name TEXT,
+  binding_code TEXT,
+  binding_code_expires DATETIME,
+  last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);

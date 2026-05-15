@@ -11,6 +11,7 @@ import Home from './pages/Home';
 import Market from './pages/Market';
 import Library from './pages/Library';
 import Composer from './pages/Composer';
+import Devices from './pages/Devices';
 import AuthModal from './components/AuthModal';
 
 export default function App() {
@@ -26,6 +27,7 @@ export default function App() {
               <Route path="/market" element={<Market />} />
               <Route path="/library" element={<Library />} />
               <Route path="/composer" element={<Composer />} />
+              <Route path="/devices" element={<Devices />} />
             </Routes>
           </main>
           <footer className="bg-white border-t border-gray-200 py-8">
