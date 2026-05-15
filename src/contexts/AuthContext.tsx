@@ -38,7 +38,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await fetch('/api/auth/me');
       if (res.ok) {
-        const data = await res.json();
+        const data: any = await res.json();
         if (data && data.user) {
           setUser(data.user);
         } else {

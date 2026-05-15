@@ -23,7 +23,7 @@ export default function ScorePlayer() {
     // Load alphaTab
     const api = new alphaTab.AlphaTabApi(containerRef.current, {
       core: {
-        file: `/api/scores/${id}/download`,
+        useWorkers: false,
         fontDirectory: 'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/font/',
       },
       display: {
@@ -47,6 +47,30 @@ export default function ScorePlayer() {
     api.playerStateChanged.on((args: any) => {
       setIsPlaying(args.state === 1); // 1 = playing, 0 = paused
     });
+
+    api.error.on((e: any) => {
+      console.error('alphaTab error:', e);
+      setScoreTitle('Error rendering score');
+      setLoading(false);
+    });
+
+    // Manually fetch and load to avoid extension/worker issues
+    fetch(`/api/scores/${id}/download`)
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`Failed to fetch score: ${res.statusText}`);
+        }
+        return res.arrayBuffer();
+      })
+      .then(buffer => {
+        const uint8 = new Uint8Array(buffer);
+        api.load(uint8);
+      })
+      .catch(err => {
+        console.error('Failed to load score:', err);
+        setScoreTitle('Error loading score');
+        setLoading(false);
+      });
 
     return () => {
       api.destroy();

@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { sign, verify } from 'hono/jwt'
 import { setCookie, getCookie, deleteCookie } from 'hono/cookie'
+import * as fflate from 'fflate'
 
 type Bindings = {
   DB: D1Database
@@ -202,11 +203,34 @@ app.get('/scores/:id/download', async (c) => {
   await c.env.DB.prepare(`UPDATE scores SET downloads = downloads + 1 WHERE id = ?`).bind(id).run()
 
   const ext = (score.file_key as string).includes('.') ? (score.file_key as string).split('.').pop()?.toLowerCase() : 'musicxml';
-  const contentType = ext === 'mxl' ? 'application/vnd.recordare.musicxml' : 'application/vnd.recordare.musicxml+xml';
+  let contentType = ext === 'mxl' ? 'application/vnd.recordare.musicxml' : 'application/vnd.recordare.musicxml+xml';
+
+  let bodyData: any = object.body;
+  let finalExt = ext;
+
+  if (ext === 'mxl' && c.req.query('format') === 'xml') {
+    const arrayBuffer = await object.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+    const unzipped = fflate.unzipSync(uint8Array);
+    
+    let xmlContent = '';
+    for (const [path, data] of Object.entries(unzipped)) {
+      if (path.endsWith('.xml') && !path.startsWith('META-INF')) {
+        xmlContent = fflate.strFromU8(data);
+        break;
+      }
+    }
+    
+    if (xmlContent) {
+      bodyData = xmlContent;
+      contentType = 'application/vnd.recordare.musicxml+xml';
+      finalExt = 'xml';
+    }
+  }
 
   c.header('Content-Type', contentType)
-  c.header('Content-Disposition', `attachment; filename="${encodeURIComponent(score.title as string)}.${ext}"`)
-  return c.body(object.body)
+  c.header('Content-Disposition', `attachment; filename="${encodeURIComponent(score.title as string)}.${finalExt}"`)
+  return c.body(bodyData)
 })
 
 // Delete score

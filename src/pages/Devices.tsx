@@ -24,7 +24,7 @@ export default function Devices() {
   const fetchDevices = async () => {
     try {
       const res = await fetch('/api/devices/me');
-      const data = await res.json();
+      const data: any = await res.json();
       if (data.success) {
         setDevices(data.devices);
       }
@@ -47,7 +47,7 @@ export default function Devices() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: bindingCode, device_name: deviceName }),
       });
-      const data = await res.json();
+      const data: any = await res.json();
       if (res.ok) {
         setSuccess('设备绑定成功！');
         setBindingCode('');

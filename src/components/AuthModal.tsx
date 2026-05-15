@@ -28,7 +28,7 @@ export default function AuthModal() {
         body: JSON.stringify(body),
       });
 
-      const data = await res.json();
+      const data: any = await res.json();
 
       if (!res.ok) {
         throw new Error(data.error || 'Authentication failed');

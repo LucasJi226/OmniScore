@@ -147,7 +147,7 @@ String selectScoreFromLibrary() {
         String title = scores[0]["title"];
         statusDisplay.updateStatus("Loading: " + title, GREEN);
         http.end();
-        return "/scores/" + scoreId + "/download";
+        return "/scores/" + scoreId + "/download?format=xml";
     } else {
         statusDisplay.showError("Failed to fetch library: " + String(httpCode));
         http.end();

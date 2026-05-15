@@ -77,7 +77,7 @@ export default function Composer() {
         body: JSON.stringify({ prompt, model, apiUrl, apiKey }),
       });
 
-      const data = await res.json();
+      const data: any = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to generate');
 
       setAbcText(data.abc);
