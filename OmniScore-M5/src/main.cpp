@@ -1,6 +1,5 @@
 #include <M5Core2.h>
 #include <WiFi.h>
-#include <WiFiClientSecure.h>
 #include <WiFiManager.h>
 #include <HTTPClient.h>
 #include <Preferences.h>
@@ -16,12 +15,11 @@ StaffRenderer renderer;
 GyroPageTurner pageTurner;
 StatusDisplay statusDisplay;
 Preferences preferences;
-WiFiClientSecure *secureClient = new WiFiClientSecure;
 
 int currentPage = 0;
 bool musicLoaded = false;
 String musicXmlUrl = "";
-String apiBaseUrl = "https://omniscore.art/api"; // Updated API endpoints
+String apiBaseUrl = "https://omniscore.top/api"; // 默认API地址
 String deviceUid = "";
 
 // 获取设备唯一ID (MAC地址)
@@ -47,10 +45,7 @@ bool downloadAndParseMusicXML(const String& url) {
     // Actually, if it's a relative path from our API, we should prepend base
     String fullUrl = url;
     if (url.startsWith("/")) {
-        // Remove "/api" if apiBaseUrl ends with it, OR simpler:
-        // Because apiBaseUrl is "https://omniscore.art/api" and url is like "/scores/...", 
-        // we can just use the host. Let's do:
-        fullUrl = "https://omniscore.art/api" + url;
+        fullUrl = "https://omniscore.top/api" + url;
     }
     
     // 显示下载界面
@@ -59,7 +54,7 @@ bool downloadAndParseMusicXML(const String& url) {
     delay(500);
     
     HTTPClient http;
-    http.begin(*secureClient, fullUrl);
+    http.begin(fullUrl);
     http.setTimeout(15000); 
     
     statusDisplay.showDownloadProgress(10);
@@ -98,7 +93,7 @@ bool checkDeviceBinding() {
     String url = apiBaseUrl + "/devices/status?uid=" + deviceUid;
     
     while (true) {
-        http.begin(*secureClient, url);
+        http.begin(url);
         int httpCode = http.GET();
         
         if (httpCode == 200) {
@@ -130,7 +125,7 @@ String selectScoreFromLibrary() {
     String url = apiBaseUrl + "/devices/scores?uid=" + deviceUid;
     
     statusDisplay.updateStatus("Fetching library...", CYAN);
-    http.begin(*secureClient, url);
+    http.begin(url);
     int httpCode = http.GET();
     
     if (httpCode == 200) {
@@ -164,10 +159,6 @@ void setup() {
     M5.begin();
     M5.IMU.Init();
     deviceUid = getDeviceUID();
-    
-    if (secureClient) {
-        secureClient->setInsecure();
-    }
     
     statusDisplay.showWelcome();
     delay(2000);

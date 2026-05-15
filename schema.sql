@@ -25,8 +25,8 @@ CREATE TABLE IF NOT EXISTS scores (
 );
 
 CREATE TABLE IF NOT EXISTS devices (
-  id TEXT PRIMARY KEY, -- Hardware UID
-  user_id TEXT, -- Bound user ID
+  id TEXT PRIMARY KEY,
+  user_id TEXT,
   device_name TEXT,
   binding_code TEXT,
   binding_code_expires DATETIME,

@@ -40,7 +40,7 @@
    - WiFi 连接成功后，屏幕会显示 "Device Binding" 界面。
    - 记住屏幕上显示的 6 位数字 **Binding Code**。
 3. **网站绑定**:
-   - 登录 [OmniScore 网站](https://omniscore.art)。
+   - 登录 [OmniScore 网站](https://omniscore.top)。
    - 进入 "我的设备" 页面。
    - 输入屏幕上的绑定码并点击 "立即绑定"。
 4. **自动同步**:

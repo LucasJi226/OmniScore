@@ -239,7 +239,7 @@ void StatusDisplay::showBindingCode(const String& code) {
     M5.Lcd.setTextColor(CYAN, BLACK);
     M5.Lcd.setTextSize(2);
     M5.Lcd.setCursor(10, 95);
-    M5.Lcd.println("omniscore.art/devices");
+    M5.Lcd.println("omniscore.top/devices");
     
     M5.Lcd.setTextColor(WHITE, BLACK);
     M5.Lcd.setTextSize(1);
